@@ -4,7 +4,7 @@
 
 Versão web do programa **VIGALU**, desenvolvido originalmente nos anos 1990 pelo Prof. Dr. Roberto Chust Carvalho e equipe no Departamento de Engenharia Civil (DECiv) da Universidade Federal de São Carlos (UFSCar).
 
-🔗 **[Acesse aqui](https://SEU-USUARIO.github.io/vigalu-web/)** ← *(atualize com sua URL após publicação)*
+🔗 **[Acesse aqui](https://augustoseixas.github.io/Vigaluweb/)**
 
 ---
 
