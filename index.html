@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VIGALU Web — Cálculo de Vigas de Concreto Armado</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700;800&display=swap');
+
+  :root {
+    --bg: #0f1419;
+    --panel: #1a2028;
+    --panel-light: #232d38;
+    --border: #2d3a47;
+    --text: #c5cdd8;
+    --text-dim: #6b7a8d;
+    --accent: #d4a843;
+    --accent-dim: #a07e2e;
+    --green: #4caf7c;
+    --red: #cf6679;
+    --blue: #5b9bd5;
+    --orange: #e8863a;
+    --cyan: #56c8d8;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
+    min-height: 100vh;
+  }
+
+  .header {
+    background: linear-gradient(135deg, #1a2028 0%, #0f1419 100%);
+    border-bottom: 2px solid var(--accent);
+    padding: 16px 24px;
+  }
+  .header-title {
+    font-size: 28px; font-weight: 800; color: var(--accent);
+    letter-spacing: 4px; line-height: 1;
+  }
+  .header-title span { color: var(--text-dim); font-size: 16px; font-weight: 400; }
+  .header-sub { font-size: 10px; color: var(--text-dim); letter-spacing: 1px; margin-top: 4px; }
+  .header-authors { font-size: 9px; color: var(--border); margin-top: 2px; }
+
+  .tabs {
+    display: flex; gap: 4px; padding: 12px 24px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .tab {
+    padding: 10px 24px; background: transparent; color: var(--text-dim);
+    border: none; cursor: pointer; font-family: inherit; font-size: 13px;
+    font-weight: 400; letter-spacing: 0.5px; border-radius: 4px 4px 0 0;
+    transition: all 0.2s;
+  }
+  .tab.active { background: var(--accent); color: var(--bg); font-weight: 700; }
+  .tab:hover:not(.active) { background: var(--panel-light); }
+
+  .content { padding: 20px 24px; max-width: 960px; }
+
+  .card {
+    background: var(--panel-light); border: 1px solid var(--border);
+    border-radius: 6px; padding: 16px; margin-bottom: 12px;
+  }
+
+  .label {
+    color: var(--text-dim); font-size: 11px; letter-spacing: 0.5px;
+    text-transform: uppercase; margin-bottom: 4px;
+  }
+  .section-title { margin-bottom: 12px; }
+  .section-title.accent { color: var(--accent); }
+  .section-title.cyan { color: var(--cyan); }
+
+  input[type="number"] {
+    background: var(--panel-light); border: 1px solid var(--border);
+    color: var(--text); padding: 8px 12px; border-radius: 4px;
+    font-family: inherit; font-size: 13px; width: 100px; outline: none;
+    transition: border-color 0.2s;
+  }
+  input[type="number"]:focus { border-color: var(--accent); }
+
+  .computed-val {
+    background: var(--bg); border: 1px solid var(--green); color: var(--green);
+    padding: 8px 12px; border-radius: 4px; font-family: inherit;
+    font-size: 13px; display: inline-block; min-width: 80px;
+  }
+
+  .row { display: flex; gap: 16px; align-items: flex-start; flex-wrap: wrap; }
+  .field { display: flex; flex-direction: column; gap: 2px; }
+
+  .btn {
+    background: var(--accent); color: var(--bg); border: none;
+    padding: 12px 32px; border-radius: 6px; cursor: pointer;
+    font-size: 14px; font-weight: 700; font-family: inherit;
+    letter-spacing: 1px; margin-top: 8px; transition: opacity 0.2s;
+  }
+  .btn:hover { opacity: 0.85; }
+
+  .btn-small {
+    background: var(--border); color: var(--text); border: none;
+    padding: 8px 14px; border-radius: 4px; cursor: pointer;
+    font-size: 11px; font-family: inherit; margin-top: 18px;
+    transition: background 0.2s;
+  }
+  .btn-small:hover { background: var(--panel); }
+
+  .btn-remove {
+    background: transparent; color: var(--red); border: 1px solid var(--red);
+    padding: 4px 10px; border-radius: 4px; cursor: pointer;
+    font-size: 11px; font-family: inherit; margin-top: 14px;
+  }
+
+  .point-load-row {
+    display: flex; gap: 12px; align-items: center; margin-top: 8px;
+    padding-left: 16px; border-left: 2px solid var(--orange);
+  }
+
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th { text-align: left; padding: 8px; color: var(--text-dim); border-bottom: 1px solid var(--border); }
+  th.right { text-align: right; }
+  td { padding: 8px; border-bottom: 1px solid rgba(45,58,71,0.13); }
+  td.right { text-align: right; }
+  td.green { color: var(--green); }
+  td.red { color: var(--red); }
+
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .grid-auto { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 4px; font-size: 12px; }
+  .grid-auto-wide { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 4px; font-size: 12px; }
+
+  .dim { color: var(--text-dim); font-size: 11px; }
+  .val-green { color: var(--green); font-weight: 700; }
+  .val-accent { color: var(--accent); }
+  .val-red { color: var(--red); }
+  .val-blue { color: var(--blue); }
+
+  .flex-section { margin-bottom: 12px; padding-left: 12px; }
+  .flex-section.pos { border-left: 2px solid var(--accent); }
+  .flex-section.neg { border-left: 2px solid var(--red); }
+  .flex-section.shear { border-left: 2px solid var(--blue); }
+
+  .flex-header { font-size: 11px; margin-bottom: 6px; font-weight: 700; }
+
+  .info-bar {
+    padding: 10px 14px; background: var(--panel-light); border-radius: 6px;
+    margin-bottom: 16px; font-size: 11px; color: var(--text-dim);
+    border-left: 3px solid var(--accent);
+  }
+
+  .note {
+    margin-top: 16px; padding: 12px; border-radius: 6px;
+    background: var(--panel-light); font-size: 10px; color: var(--text-dim);
+    line-height: 1.6; border-left: 3px solid var(--border);
+  }
+  .note strong { color: var(--accent); }
+
+  .empty-state { padding: 40px; text-align: center; color: var(--text-dim); }
+
+  .stirrup-info { margin-top: 8px; font-size: 11px; color: var(--text-dim); }
+  .stirrup-info span { color: var(--text); }
+
+  canvas { display: block; margin: 0 auto; }
+
+  @media print {
+    body { background: #fff; color: #222; }
+    .tabs, .btn, .btn-small, .btn-remove { display: none; }
+    .card { border-color: #ccc; background: #f9f9f9; }
+    .header { background: #fff; border-color: #333; }
+    .header-title { color: #333; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-title">VIGALU<span> Web</span></div>
+  <div class="header-sub">UFSCar / DECiv — Cálculo de Vigas de Concreto Armado — NBR 6118</div>
+  <div class="header-authors">R. Chust Carvalho · P. Garcia · F. P. Santos · M. A. F. Silva — Versão Web 2026</div>
+</div>
+
+<div class="tabs">
+  <button class="tab active" data-tab="input">DADOS</button>
+  <button class="tab" data-tab="results">ESFORÇOS</button>
+  <button class="tab" data-tab="design">DIMENSIONAMENTO</button>
+</div>
+
+<div class="content">
+  <!-- INPUT TAB -->
+  <div id="tab-input"></div>
+  <!-- RESULTS TAB -->
+  <div id="tab-results" style="display:none"></div>
+  <!-- DESIGN TAB -->
+  <div id="tab-design" style="display:none"></div>
+</div>
+
+<script>
+// ============================================================
+// VIGALU Web — Standalone HTML
+// ============================================================
+
+// --- State ---
+const state = {
+  numSpans: 2,
+  spans: [{ length: 5.0 }, { length: 4.0 }],
+  loads: [
+    { distributed: 15, concentrated: [] },
+    { distributed: 12, concentrated: [] },
+  ],
+  material: { fck: 25, bw: 0.20, h: 0.50, d: 0.46, dLinha: 0.04 },
+  gammaF: 1.4,
+  activeTab: "input",
+  analysis: null,
+  designResults: null,
+};
+
+// --- Engineering Calculations ---
+
+function solveTridiagonal(a, b, c, d) {
+  const n = b.length;
+  const cp = Array(n).fill(0), dp = Array(n).fill(0), x = Array(n).fill(0);
+  cp[0] = c[0] / b[0]; dp[0] = d[0] / b[0];
+  for (let i = 1; i < n; i++) {
+    const m = b[i] - a[i] * cp[i-1];
+    cp[i] = c[i] / m;
+    dp[i] = (d[i] - a[i] * dp[i-1]) / m;
+  }
+  x[n-1] = dp[n-1];
+  for (let i = n-2; i >= 0; i--) x[i] = dp[i] - cp[i] * x[i+1];
+  return x;
+}
+
+function analyzeBeam(spans, loads) {
+  const n = spans.length;
+  if (n === 0) return null;
+  const L = spans.map(s => s.length);
+  const q = loads.map(l => l.distributed);
+  const pointLoads = loads.map(l => l.concentrated || []);
+  const M = Array(n + 1).fill(0);
+
+  if (n > 1) {
+    const size = n - 1;
+    const aa = Array(size).fill(0), bb = Array(size).fill(0);
+    const cc = Array(size).fill(0), dd = Array(size).fill(0);
+    for (let i = 0; i < size; i++) {
+      const idx = i + 1;
+      const Li = L[idx-1], Lr = L[idx];
+      bb[i] = 2 * (Li + Lr);
+      if (i > 0) aa[i] = Li;
+      if (i < size-1) cc[i] = Lr;
+      let rhs = -(q[idx-1]*Li*Li*Li + q[idx]*Lr*Lr*Lr) / 4;
+      for (const pl of pointLoads[idx-1]) {
+        const P = pl.force, a = pl.position;
+        rhs -= (P * a * (Li*Li - a*a)) / Li;
+      }
+      for (const pl of pointLoads[idx]) {
+        const P = pl.force, a = pl.position, b = Lr - a;
+        rhs -= (P * b * (Lr*Lr - b*b)) / Lr;
+      }
+      dd[i] = rhs;
+    }
+    const solved = solveTridiagonal(aa, bb, cc, dd);
+    for (let i = 0; i < size; i++) M[i+1] = solved[i];
+  }
+
+  const results = [];
+  const reactions = Array(n + 1).fill(0);
+
+  for (let i = 0; i < n; i++) {
+    const Li = L[i], qi = q[i], Ml = M[i], Mr = M[i+1];
+    let Rl = (qi*Li)/2 + (Mr - Ml)/Li;
+    let Rr = (qi*Li)/2 - (Mr - Ml)/Li;
+    for (const pl of pointLoads[i]) {
+      const P = pl.force, a = pl.position, b = Li - a;
+      Rl += (P*b)/Li; Rr += (P*a)/Li;
+    }
+    reactions[i] += Rl; reactions[i+1] += Rr;
+
+    const nPts = 50;
+    const vData = [], mData = [];
+    for (let j = 0; j <= nPts; j++) {
+      const x = (j/nPts) * Li;
+      let V = Rl - qi * x;
+      let Mx = Ml + Rl * x - (qi*x*x)/2;
+      for (const pl of pointLoads[i]) {
+        if (x > pl.position) { V -= pl.force; Mx -= pl.force * (x - pl.position); }
+      }
+      vData.push({ x, v: V }); mData.push({ x, m: Mx });
+    }
+
+    let maxM = -Infinity, minM = Infinity, maxV = -Infinity, minV = Infinity;
+    let maxMx = 0, minMx = 0;
+    for (const pt of mData) {
+      if (pt.m > maxM) { maxM = pt.m; maxMx = pt.x; }
+      if (pt.m < minM) { minM = pt.m; minMx = pt.x; }
+    }
+    for (const pt of vData) {
+      if (pt.v > maxV) maxV = pt.v;
+      if (pt.v < minV) minV = pt.v;
+    }
+    results.push({ span: i, length: Li, Ml, Mr, Rl, Rr, vData, mData, maxM, minM, maxV, minV, maxMx, minMx });
+  }
+  return { M, reactions, results, spans: L };
+}
+
+function designFlexure(Md, bw, d, fck) {
+  const fcd = fck / 1.4, fyd = 500 / 1.15;
+  const lambda = 0.8, alphaC = 0.85;
+  const MdNm = Math.abs(Md) * 1000;
+  const mu = MdNm / (bw * d * d * alphaC * fcd * 1000);
+  if (mu > 0.45) return { error: "Seção insuficiente (armadura dupla necessária)", mu };
+  const xi = (1 - Math.sqrt(1 - 2 * mu)) / lambda;
+  const x = xi * d;
+  let domain = xi <= 0.259 ? "Domínio 2" : xi <= 0.45 ? "Domínio 3" : "Domínio 4 (redimensionar)";
+  const z = d - 0.5 * lambda * x;
+  const AsCm2 = (MdNm / (fyd * 1000 * z)) * 10000;
+  const AsMinCm2 = 0.0015 * bw * d * 10000;
+  return { mu, xi, x: x*100, z: z*100, As: Math.max(AsCm2, AsMinCm2), AsCalc: AsCm2, AsMin: AsMinCm2, domain, fyd, fcd };
+}
+
+function designShear(Vd, bw, d, fck) {
+  const fcd = fck / 1.4, fyd = 500 / 1.15;
+  const fywd = Math.min(fyd, 435);
+  const VdAbs = Math.abs(Vd);
+  const Vrd2 = 0.27 * (1 - fck/250) * fcd * 1000 * bw * d;
+  const fctm = 0.3 * Math.pow(fck, 2/3);
+  const fctkInf = 0.7 * fctm;
+  const fctd = fctkInf / 1.4;
+  const Vc = 0.6 * fctd * 1000 * bw * d;
+  const Vsw = Math.max(VdAbs - Vc, 0);
+  const AswS = Vsw / (0.9 * d * fywd * 1000) * 10000 * 100;
+  const rhoSwMin = 0.2 * fctm / 500;
+  const AswSMin = rhoSwMin * bw * 100 * 100;
+  const calcSpacing = (phi) => {
+    const AswBar = 2 * Math.PI * (phi/2)*(phi/2) / 4;
+    return Math.min(AswBar / Math.max(AswS/100, AswSMin/100), 30, 0.6*d*100, 30);
+  };
+  return { Vrd2, Vc, Vsw, AswS: Math.max(AswS, AswSMin), AswSMin, AswSCalc: AswS,
+    ok: VdAbs <= Vrd2, spacing5mm: calcSpacing(0.5), spacing63mm: calcSpacing(0.63), spacing8mm: calcSpacing(0.8), fctd, fywd };
+}
+
+// --- Rendering ---
+
+function switchTab(tab) {
+  state.activeTab = tab;
+  document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+  ['input','results','design'].forEach(t => {
+    document.getElementById('tab-' + t).style.display = t === tab ? '' : 'none';
+  });
+  if (tab === 'results' || tab === 'design') runAnalysis();
+  if (tab === 'results') renderResults();
+  if (tab === 'design') renderDesign();
+}
+
+document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', () => switchTab(t.dataset.tab)));
+
+function runAnalysis() {
+  const valid = state.spans.every(s => s.length > 0);
+  if (!valid) { state.analysis = null; state.designResults = null; return; }
+  state.analysis = analyzeBeam(state.spans, state.loads);
+  if (state.analysis) {
+    const { bw, d, fck } = state.material;
+    const gf = state.gammaF;
+    state.designResults = state.analysis.results.map(r => {
+      const MdPos = r.maxM * gf, MdNeg = r.minM * gf;
+      const VdMax = Math.max(Math.abs(r.maxV), Math.abs(r.minV)) * gf;
+      return {
+        span: r.span, MdPos, MdNeg, VdMax,
+        flexPos: Math.abs(MdPos) > 0.01 ? designFlexure(MdPos, bw, d, fck) : null,
+        flexNeg: Math.abs(MdNeg) > 0.01 ? designFlexure(MdNeg, bw, d, fck) : null,
+        shear: designShear(VdMax, bw, d, fck),
+      };
+    });
+  }
+}
+
+function renderInput() {
+  const el = document.getElementById('tab-input');
+  const m = state.material;
+  let html = `
+    <div class="card">
+      <div class="label section-title accent">▸ GEOMETRIA DA VIGA</div>
+      <div class="row">
+        <div class="field"><div class="label">Nº de Vãos</div>
+          <input type="number" min="1" max="8" value="${state.numSpans}" onchange="setNumSpans(this.value)" style="width:70px"></div>
+        <div class="field"><div class="label">fck (MPa)</div>
+          <input type="number" value="${m.fck}" onchange="setMat('fck',this.value)" style="width:70px"></div>
+        <div class="field"><div class="label">bw (cm)</div>
+          <input type="number" value="${(m.bw*100).toFixed(0)}" onchange="setMat('bw',this.value/100)" style="width:70px"></div>
+        <div class="field"><div class="label">h (cm)</div>
+          <input type="number" value="${(m.h*100).toFixed(0)}" onchange="setH(this.value)" style="width:70px"></div>
+        <div class="field"><div class="label">d' (cm)</div>
+          <input type="number" value="${(m.dLinha*100).toFixed(0)}" onchange="setDLinha(this.value)" style="width:70px"></div>
+        <div class="field"><div class="label">d (cm)</div>
+          <div class="computed-val">${(m.d*100).toFixed(1)}</div></div>
+        <div class="field"><div class="label">γf</div>
+          <input type="number" step="0.1" value="${state.gammaF}" onchange="state.gammaF=parseFloat(this.value)||1.4" style="width:70px"></div>
+      </div>
+    </div>`;
+
+  for (let i = 0; i < state.numSpans; i++) {
+    const sp = state.spans[i], ld = state.loads[i];
+    html += `<div class="card">
+      <div class="label section-title cyan">▸ VÃO ${i+1}</div>
+      <div class="row">
+        <div class="field"><div class="label">Comprimento (m)</div>
+          <input type="number" step="0.1" value="${sp.length}" onchange="setSpan(${i},this.value)"></div>
+        <div class="field"><div class="label">Carga dist. (kN/m)</div>
+          <input type="number" step="0.5" value="${ld.distributed}" onchange="setLoad(${i},'distributed',this.value)"></div>
+        <div><button class="btn-small" onclick="addPointLoad(${i})">+ Carga Concentrada</button></div>
+      </div>`;
+    for (let j = 0; j < (ld.concentrated||[]).length; j++) {
+      const pl = ld.concentrated[j];
+      html += `<div class="point-load-row">
+        <div class="field"><div class="label" style="font-size:10px">P (kN)</div>
+          <input type="number" value="${pl.force}" onchange="setPL(${i},${j},'force',this.value)" style="width:80px"></div>
+        <div class="field"><div class="label" style="font-size:10px">Posição (m)</div>
+          <input type="number" step="0.1" value="${pl.position}" onchange="setPL(${i},${j},'position',this.value)" style="width:80px"></div>
+        <button class="btn-remove" onclick="removePL(${i},${j})">✕</button>
+      </div>`;
+    }
+    html += `</div>`;
+  }
+  html += `<button class="btn" onclick="switchTab('results')">▸ CALCULAR</button>`;
+  el.innerHTML = html;
+}
+
+function renderResults() {
+  const el = document.getElementById('tab-results');
+  const a = state.analysis;
+  if (!a) { el.innerHTML = '<div class="empty-state">Preencha os dados na aba DADOS e clique em CALCULAR.</div>'; return; }
+
+  let html = `<canvas id="beamCanvas" width="900" height="320" style="width:900px;height:320px;max-width:100%"></canvas>`;
+
+  // Reactions table
+  html += `<div class="card" style="margin-top:16px">
+    <div class="label section-title accent">▸ REAÇÕES DE APOIO</div>
+    <table><thead><tr><th>Apoio</th><th class="right">Reação (kN)</th><th class="right">Momento (kN.m)</th></tr></thead><tbody>`;
+  for (let i = 0; i < a.reactions.length; i++) {
+    const mClass = Math.abs(a.M[i]) > 0.01 ? 'red' : '';
+    html += `<tr><td class="green">Apoio ${i}</td><td class="right">${a.reactions[i].toFixed(3)}</td>
+      <td class="right ${mClass}">${a.M[i].toFixed(3)}</td></tr>`;
+  }
+  html += `</tbody></table></div>`;
+
+  // Span results
+  for (const r of a.results) {
+    html += `<div class="card">
+      <div class="label section-title cyan">▸ VÃO ${r.span+1} — L = ${r.length.toFixed(2)} m</div>
+      <div class="grid2">
+        <div><span class="dim">M+ máx: </span><span class="val-accent">${r.maxM.toFixed(3)} kN.m</span>
+          <span class="dim" style="font-size:10px"> (x=${r.maxMx.toFixed(2)}m)</span></div>
+        <div><span class="dim">M- mín: </span><span class="val-red">${r.minM.toFixed(3)} kN.m</span></div>
+        <div><span class="dim">V máx: </span><span class="val-blue">${r.maxV.toFixed(3)} kN</span></div>
+        <div><span class="dim">V mín: </span><span class="val-blue">${r.minV.toFixed(3)} kN</span></div>
+      </div></div>`;
+  }
+  html += `<button class="btn" onclick="switchTab('design')">▸ DIMENSIONAR</button>`;
+  el.innerHTML = html;
+
+  // Draw canvas
+  setTimeout(() => drawBeamDiagram(a), 50);
+}
+
+function renderDesign() {
+  const el = document.getElementById('tab-design');
+  const dr = state.designResults;
+  if (!dr) { el.innerHTML = '<div class="empty-state">Preencha os dados na aba DADOS e clique em CALCULAR.</div>'; return; }
+
+  const m = state.material;
+  let html = `<div class="info-bar">Aço CA-50 (fyk=500 MPa) · fck=${m.fck} MPa · bw=${(m.bw*100).toFixed(0)} cm · d=${(m.d*100).toFixed(1)} cm · γf=${state.gammaF} · γc=1,4 · γs=1,15</div>`;
+
+  for (const d of dr) {
+    html += `<div class="card"><div class="label section-title cyan" style="font-size:12px">▸ VÃO ${d.span+1} — DIMENSIONAMENTO</div>`;
+
+    // Flexure positive
+    if (d.flexPos) {
+      html += `<div class="flex-section pos"><div class="flex-header" style="color:var(--accent)">FLEXÃO POSITIVA — Md+ = ${d.MdPos.toFixed(2)} kN.m</div>`;
+      if (d.flexPos.error) {
+        html += `<div style="color:var(--red);font-size:12px">⚠ ${d.flexPos.error}</div>`;
+      } else {
+        html += `<div class="grid-auto">
+          <div><span class="dim">μ = </span>${d.flexPos.mu.toFixed(4)}</div>
+          <div><span class="dim">x/d = </span>${d.flexPos.xi.toFixed(4)}</div>
+          <div><span class="dim">x = </span>${d.flexPos.x.toFixed(2)} cm</div>
+          <div><span class="dim">${d.flexPos.domain}</span></div>
+          <div><span class="dim">As = </span><span class="val-green">${d.flexPos.As.toFixed(2)} cm²</span></div>
+          <div><span class="dim">As,mín = </span>${d.flexPos.AsMin.toFixed(2)} cm²</div>
+        </div>`;
+      }
+      html += `</div>`;
+    }
+
+    // Flexure negative
+    if (d.flexNeg && Math.abs(d.MdNeg) > 0.01) {
+      html += `<div class="flex-section neg"><div class="flex-header" style="color:var(--red)">FLEXÃO NEGATIVA — Md- = ${d.MdNeg.toFixed(2)} kN.m</div>`;
+      if (d.flexNeg.error) {
+        html += `<div style="color:var(--red);font-size:12px">⚠ ${d.flexNeg.error}</div>`;
+      } else {
+        html += `<div class="grid-auto">
+          <div><span class="dim">μ = </span>${d.flexNeg.mu.toFixed(4)}</div>
+          <div><span class="dim">x/d = </span>${d.flexNeg.xi.toFixed(4)}</div>
+          <div><span class="dim">x = </span>${d.flexNeg.x.toFixed(2)} cm</div>
+          <div><span class="dim">${d.flexNeg.domain}</span></div>
+          <div><span class="dim">As = </span><span class="val-green">${d.flexNeg.As.toFixed(2)} cm²</span></div>
+          <div><span class="dim">As,mín = </span>${d.flexNeg.AsMin.toFixed(2)} cm²</div>
+        </div>`;
+      }
+      html += `</div>`;
+    }
+
+    // Shear
+    html += `<div class="flex-section shear"><div class="flex-header" style="color:var(--blue)">CORTANTE — Vd = ${d.VdMax.toFixed(2)} kN`;
+    if (!d.shear.ok) html += ` <span style="color:var(--red)">⚠ BIELA COMPRIMIDA EXCEDIDA</span>`;
+    html += `</div><div class="grid-auto-wide">
+      <div><span class="dim">Vrd2 = </span>${d.shear.Vrd2.toFixed(2)} kN</div>
+      <div><span class="dim">Vc = </span>${d.shear.Vc.toFixed(2)} kN</div>
+      <div><span class="dim">Vsw = </span>${d.shear.Vsw.toFixed(2)} kN</div>
+      <div><span class="dim">Asw/s = </span><span class="val-green">${d.shear.AswS.toFixed(2)} cm²/m</span></div>
+    </div>
+    <div class="stirrup-info">Espaçamento estribos (2 ramos):
+      <span>ø5.0mm: ${d.shear.spacing5mm.toFixed(1)}cm</span> ·
+      <span>ø6.3mm: ${d.shear.spacing63mm.toFixed(1)}cm</span> ·
+      <span>ø8.0mm: ${d.shear.spacing8mm.toFixed(1)}cm</span>
+    </div></div>`;
+
+    html += `</div>`;
+  }
+
+  html += `<div class="note"><strong>NOTA:</strong> Ferramenta didática inspirada no programa VIGALU original (UFSCar/DECiv, c. 1990).
+    Análise via Equação dos Três Momentos (Clapeyron). Dimensionamento conforme NBR 6118:2014 — Modelo I para cortante.
+    Apoios simplesmente apoiados nas extremidades. Não substitui o cálculo por profissional habilitado.</div>`;
+
+  el.innerHTML = html;
+}
+
+function drawBeamDiagram(a) {
+  const canvas = document.getElementById('beamCanvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const dpr = window.devicePixelRatio || 1;
+  const w = 900, h = 320;
+  canvas.width = w * dpr; canvas.height = h * dpr;
+  canvas.style.width = w + 'px'; canvas.style.height = h + 'px';
+  ctx.scale(dpr, dpr);
+
+  ctx.fillStyle = '#1a2028'; ctx.fillRect(0, 0, w, h);
+
+  const mg = { top: 20, right: 40, bottom: 20, left: 40 };
+  const plotW = w - mg.left - mg.right;
+  const totalL = a.spans.reduce((a,b) => a+b, 0);
+  const beamY = h * 0.28;
+  const diagH = h * 0.28;
+
+  const xScale = (si, lx) => {
+    let off = 0; for (let i = 0; i < si; i++) off += a.spans[i];
+    return mg.left + ((off + lx) / totalL) * plotW;
+  };
+  const supX = (i) => {
+    let off = 0; for (let j = 0; j < i; j++) off += a.spans[j];
+    return mg.left + (off / totalL) * plotW;
+  };
+
+  // Beam line
+  ctx.strokeStyle = '#c5cdd8'; ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.moveTo(mg.left, beamY); ctx.lineTo(mg.left + plotW, beamY); ctx.stroke();
+
+  // Supports & reactions
+  for (let i = 0; i <= a.spans.length; i++) {
+    const sx = supX(i);
+    ctx.fillStyle = '#d4a843';
+    ctx.beginPath(); ctx.moveTo(sx, beamY+2); ctx.lineTo(sx-10, beamY+18); ctx.lineTo(sx+10, beamY+18); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#4caf7c'; ctx.font = '11px JetBrains Mono, monospace'; ctx.textAlign = 'center';
+    ctx.fillText('R'+i+'='+a.reactions[i].toFixed(2), sx, beamY+32);
+  }
+
+  // Span labels
+  ctx.fillStyle = '#6b7a8d'; ctx.font = '11px JetBrains Mono, monospace'; ctx.textAlign = 'center';
+  for (let i = 0; i < a.spans.length; i++) {
+    const x1 = supX(i), x2 = supX(i+1);
+    ctx.fillText('V'+(i+1)+' ('+a.spans[i].toFixed(2)+'m)', (x1+x2)/2, beamY-10);
+  }
+
+  // Moment diagram
+  let mRange = 0.1;
+  for (const r of a.results) for (const pt of r.mData) mRange = Math.max(mRange, Math.abs(pt.m));
+  const mBaseY = beamY + 55;
+
+  for (const r of a.results) {
+    ctx.fillStyle = 'rgba(212,168,67,0.15)'; ctx.strokeStyle = '#d4a843'; ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(xScale(r.span, 0), mBaseY);
+    for (const pt of r.mData) ctx.lineTo(xScale(r.span, pt.x), mBaseY + (pt.m / mRange) * diagH);
+    ctx.lineTo(xScale(r.span, r.length), mBaseY);
+    ctx.closePath(); ctx.fill(); ctx.stroke();
+  }
+
+  ctx.fillStyle = '#d4a843'; ctx.font = 'bold 11px JetBrains Mono, monospace'; ctx.textAlign = 'left';
+  ctx.fillText('M (kN.m)', mg.left, mBaseY - 5);
+
+  // Critical values
+  ctx.font = '10px JetBrains Mono, monospace';
+  for (const r of a.results) {
+    if (Math.abs(r.maxM) > 0.01) {
+      const px = xScale(r.span, r.maxMx), py = mBaseY + (r.maxM / mRange) * diagH;
+      ctx.fillStyle = '#d4a843'; ctx.textAlign = 'center'; ctx.fillText(r.maxM.toFixed(2), px, py + 12);
+    }
+  }
+  ctx.fillStyle = '#cf6679';
+  for (let i = 0; i <= a.spans.length; i++) {
+    if (Math.abs(a.M[i]) > 0.01) {
+      ctx.textAlign = 'center'; ctx.fillText(a.M[i].toFixed(2), supX(i), mBaseY - 12);
+    }
+  }
+}
+
+// --- State Mutators ---
+
+function setNumSpans(v) {
+  const n = Math.max(1, Math.min(8, parseInt(v) || 1));
+  state.numSpans = n;
+  while (state.spans.length < n) { state.spans.push({ length: 4.0 }); state.loads.push({ distributed: 10, concentrated: [] }); }
+  state.spans = state.spans.slice(0, n);
+  state.loads = state.loads.slice(0, n);
+  renderInput();
+}
+
+function setSpan(i, v) { state.spans[i].length = parseFloat(v) || 1; }
+function setLoad(i, f, v) { state.loads[i][f] = parseFloat(v) || 0; }
+function setMat(k, v) { state.material[k] = parseFloat(v) || 0; renderInput(); }
+function setH(v) { const h = (parseFloat(v)||50)/100; state.material.h = h; state.material.d = h - state.material.dLinha; renderInput(); }
+function setDLinha(v) { const dl = (parseFloat(v)||4)/100; state.material.dLinha = dl; state.material.d = state.material.h - dl; renderInput(); }
+
+function addPointLoad(i) {
+  if (!state.loads[i].concentrated) state.loads[i].concentrated = [];
+  state.loads[i].concentrated.push({ force: 10, position: state.spans[i].length / 2 });
+  renderInput();
+}
+function removePL(i, j) { state.loads[i].concentrated.splice(j, 1); renderInput(); }
+function setPL(i, j, f, v) { state.loads[i].concentrated[j][f] = parseFloat(v) || 0; }
+
+// --- Init ---
+renderInput();
+</script>
+</body>
+</html>
